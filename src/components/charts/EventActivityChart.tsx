@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { fetchEventActivity } from '@/lib/soroban'
 import { Network } from '@/types'
 import { Spinner } from '@/components/ui/Spinner'
 
@@ -14,7 +13,8 @@ export function EventActivityChart({ contractId, network }: { contractId: string
 
   useEffect(() => {
     setIsLoading(true)
-    fetchEventActivity(contractId, network, days)
+    fetch(`/api/activity?contractId=${contractId}&network=${network}&days=${days}`)
+      .then(res => res.ok ? res.json() : [])
       .then(setData)
       .catch(() => setData([]))
       .finally(() => setIsLoading(false))
