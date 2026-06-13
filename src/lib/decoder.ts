@@ -1,4 +1,4 @@
-import { xdr, Address, nativeToScVal } from '@stellar/stellar-sdk'
+import { xdr, Address, scValToNative } from '@stellar/stellar-sdk'
 import { DecodedTopic, DecodedValue } from '@/types'
 
 export function identifyType(xdrStr: string): string {
@@ -35,13 +35,13 @@ function scValToString(val: xdr.ScVal): string {
     if (arm === 'scvSymbol') return val.sym().toString()
     if (arm === 'scvString') return val.str().toString()
     if (arm === 'scvAddress') return Address.fromScVal(val).toString()
-    if (arm === 'scvU64') return val.u64().toString()
-    if (arm === 'scvI64') return val.i64().toString()
+    if (arm === 'scvBool') return val.b().toString()
+    if (arm === 'scvVoid') return 'void'
+    if (arm === 'scvBytes') return Buffer.from(val.bytes()).toString('hex')
     if (arm === 'scvU32') return val.u32().toString()
     if (arm === 'scvI32') return val.i32().toString()
-    if (arm === 'scvBool') return val.b().toString()
-    if (arm === 'scvBytes') return Buffer.from(val.bytes()).toString('hex')
-    if (arm === 'scvVoid') return 'void'
+    if (arm === 'scvU64') return val.u64().toString()
+    if (arm === 'scvI64') return val.i64().toString()
     if (arm === 'scvU128') {
       const hi = BigInt(val.u128().hi().toString())
       const lo = BigInt(val.u128().lo().toString())
@@ -62,7 +62,9 @@ function scValToString(val: xdr.ScVal): string {
       if (!entries) return '{}'
       return '{' + entries.map(e => `${scValToString(e.key())}: ${scValToString(e.val())}`).join(', ') + '}'
     }
-    return val.toXDR('base64')
+    // fallback: use SDK native converter
+    const native = scValToNative(val)
+    return String(native)
   } catch {
     return val.toXDR('base64')
   }
@@ -71,11 +73,7 @@ function scValToString(val: xdr.ScVal): string {
 export function decodeTopic(rawXdr: string): DecodedTopic {
   try {
     const val = xdr.ScVal.fromXDR(rawXdr, 'base64')
-    return {
-      raw: rawXdr,
-      decoded: scValToString(val),
-      type: identifyType(rawXdr),
-    }
+    return { raw: rawXdr, decoded: scValToString(val), type: identifyType(rawXdr) }
   } catch {
     return { raw: rawXdr, decoded: rawXdr, type: 'Unknown' }
   }
@@ -84,11 +82,7 @@ export function decodeTopic(rawXdr: string): DecodedTopic {
 export function decodeValue(rawXdr: string): DecodedValue {
   try {
     const val = xdr.ScVal.fromXDR(rawXdr, 'base64')
-    return {
-      raw: rawXdr,
-      decoded: scValToString(val),
-      type: identifyType(rawXdr),
-    }
+    return { raw: rawXdr, decoded: scValToString(val), type: identifyType(rawXdr) }
   } catch {
     return { raw: rawXdr, decoded: rawXdr, type: 'Unknown' }
   }

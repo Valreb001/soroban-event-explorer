@@ -1,11 +1,11 @@
-import { SorobanRpc } from '@stellar/stellar-sdk'
+import { rpc } from '@stellar/stellar-sdk'
 import { Network, SorobanEvent, EventFilters, ContractStats, EventType } from '@/types'
 import { NETWORK_CONFIG, DEFAULT_PAGE_LIMIT } from '@/constants'
 import { decodeTopic, decodeValue } from './decoder'
 
-export function getSorobanServer(network: Network): SorobanRpc.Server {
+export function getSorobanServer(network: Network): rpc.Server {
   const url = NETWORK_CONFIG[network].rpc
-  return new SorobanRpc.Server(url, { allowHttp: url.startsWith('http://') })
+  return new rpc.Server(url, { allowHttp: url.startsWith('http://') })
 }
 
 function parseEventType(type: string): EventType {
@@ -13,7 +13,7 @@ function parseEventType(type: string): EventType {
   return 'contract'
 }
 
-function mapRawEvent(raw: SorobanRpc.Api.RawEventResponse): SorobanEvent {
+function mapRawEvent(raw: rpc.Api.RawEventResponse): SorobanEvent {
   const topics = (raw.topic || []).map(decodeTopic)
   const value = raw.value ? decodeValue(raw.value) : { raw: '', decoded: '', type: 'Void' }
   return {
@@ -29,11 +29,11 @@ function mapRawEvent(raw: SorobanRpc.Api.RawEventResponse): SorobanEvent {
   }
 }
 
-async function getStartLedger(server: SorobanRpc.Server, ledgerFrom?: number | null): Promise<number> {
+async function getStartLedger(server: rpc.Server, ledgerFrom?: number | null): Promise<number> {
   if (ledgerFrom && ledgerFrom > 0) return ledgerFrom
   try {
     const latest = await server.getLatestLedger()
-    // Go back ~7 days worth of ledgers (ledger closes ~every 5s, 17280 per day)
+    // ~7 days back: ledger closes every ~5s, 17280 ledgers/day
     return Math.max(1, latest.sequence - 17280 * 7)
   } catch {
     return 1
@@ -50,7 +50,7 @@ export async function fetchContractEvents(
   const server = getSorobanServer(network)
   const startLedger = cursor ? undefined : await getStartLedger(server, filters?.ledgerFrom)
 
-  const request: SorobanRpc.Server.GetEventsRequest = {
+  const request: rpc.Server.GetEventsRequest = {
     ...(cursor ? {} : { startLedger }),
     filters: [
       {
@@ -82,12 +82,10 @@ export async function fetchEventById(
   eventId: string,
   network: Network
 ): Promise<SorobanEvent | null> {
-  // Event IDs encode the ledger: format is <ledger>-<index>
   const server = getSorobanServer(network)
   try {
     const ledgerNum = parseInt(eventId.split('-')[0], 10)
     if (isNaN(ledgerNum)) return null
-
     const response = await server.getEvents({
       startLedger: ledgerNum,
       filters: [{}],
@@ -107,13 +105,11 @@ export async function fetchContractStats(
   const server = getSorobanServer(network)
   const startLedger = await getStartLedger(server, null)
 
-  const request: SorobanRpc.Server.GetEventsRequest = {
+  const response = await server.getEvents({
     startLedger,
     filters: [{ contractIds: [contractId] }],
     limit: 200,
-  }
-
-  const response = await server.getEvents(request)
+  })
   const events = (response.events || []).map(mapRawEvent)
 
   const uniqueTopics = new Set(events.flatMap(e => e.topics.map(t => t.decoded))).size
