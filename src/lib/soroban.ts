@@ -14,11 +14,52 @@ function parseEventType(type: string): EventType {
 }
 
 function mapRawEvent(raw: rpc.Api.RawEventResponse): SorobanEvent {
-  const topics = (raw.topic || []).map(decodeTopic)
-  const value = raw.value ? decodeValue(raw.value) : { raw: '', decoded: '', type: 'Void' }
+  const topics = (raw.topic || []).map((t: unknown) => {
+    // SDK v15 returns already-parsed xdr.ScVal objects, not base64 strings
+    if (typeof t === 'string') return decodeTopic(t)
+    try {
+      const xdrVal = t as import('@stellar/stellar-sdk').xdr.ScVal
+      const base64 = xdrVal.toXDR('base64')
+      return decodeTopic(base64)
+    } catch {
+      return { raw: String(t), decoded: String(t), type: 'Unknown' }
+    }
+  })
+
+  let value = { raw: '', decoded: '', type: 'Void' }
+  if (raw.value) {
+    if (typeof raw.value === 'string') {
+      value = decodeValue(raw.value)
+    } else {
+      try {
+        const xdrVal = raw.value as import('@stellar/stellar-sdk').xdr.ScVal
+        const base64 = xdrVal.toXDR('base64')
+        value = decodeValue(base64)
+      } catch {
+        value = { raw: String(raw.value), decoded: String(raw.value), type: 'Unknown' }
+      }
+    }
+  }
+
+  // contractId may be an object with _id buffer in v15
+  let contractId = ''
+  if (typeof raw.contractId === 'string') {
+    contractId = raw.contractId
+  } else if (raw.contractId) {
+    try {
+      const { StrKey } = require('@stellar/stellar-sdk')
+      const idObj = raw.contractId as { _id?: { data?: number[] } }
+      if (idObj._id?.data) {
+        contractId = StrKey.encodeContract(Buffer.from(idObj._id.data))
+      }
+    } catch {
+      contractId = ''
+    }
+  }
+
   return {
     id: raw.id,
-    contractId: raw.contractId || '',
+    contractId,
     type: parseEventType(raw.type),
     ledger: raw.ledger,
     ledgerClosedAt: raw.ledgerClosedAt,
@@ -33,8 +74,9 @@ async function getStartLedger(server: rpc.Server, ledgerFrom?: number | null): P
   if (ledgerFrom && ledgerFrom > 0) return ledgerFrom
   try {
     const latest = await server.getLatestLedger()
-    // ~7 days back: ledger closes every ~5s, 17280 ledgers/day
-    return Math.max(1, latest.sequence - 17280 * 7)
+    // Testnet RPC retains ~120960 ledgers (~7 days at 5s/ledger)
+    // Use latest minus 110000 to stay safely within retention window
+    return Math.max(1, latest.sequence - 110000)
   } catch {
     return 1
   }
