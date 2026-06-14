@@ -19,8 +19,9 @@ export function useWallet() {
         setNetwork(net)
         setIsConnected(true)
       }
-    } catch {}
-    finally { setIsLoading(false) }
+    } catch (err) {
+      console.error('Freighter connection error:', err)
+    } finally { setIsLoading(false) }
   }
 
   const disconnect = () => {

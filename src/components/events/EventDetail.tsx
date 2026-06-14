@@ -3,11 +3,13 @@ import { EventTypeBadge } from './EventTypeBadge'
 import { TopicDecoder } from './TopicDecoder'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { formatTimestamp, formatRelativeTime, truncateAddress } from '@/lib/format'
+import { matchSignature, CATEGORY_STYLES } from '@/lib/signatures'
 import { STELLAR_EXPERT_BASE } from '@/constants'
 import { Network } from '@/types'
 
 export function EventDetail({ event, network }: { event: SorobanEvent; network: Network }) {
   const base = STELLAR_EXPERT_BASE[network]
+  const sig = matchSignature(event.topics)
 
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-lg p-4 space-y-4">
@@ -16,6 +18,11 @@ export function EventDetail({ event, network }: { event: SorobanEvent; network: 
         <span className={`text-xs px-2 py-0.5 rounded ${event.inSuccessfulContractCall ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
           {event.inSuccessfulContractCall ? 'Successful' : 'Failed'}
         </span>
+        {sig && (
+          <span className={`text-xs px-2 py-0.5 rounded border font-medium ${CATEGORY_STYLES[sig.category]}`}>
+            {sig.label} · {sig.description}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">

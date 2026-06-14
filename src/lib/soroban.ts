@@ -1,4 +1,4 @@
-import { rpc } from '@stellar/stellar-sdk'
+import { rpc, StrKey } from '@stellar/stellar-sdk'
 import { Network, SorobanEvent, EventFilters, ContractStats, EventType } from '@/types'
 import { NETWORK_CONFIG, DEFAULT_PAGE_LIMIT } from '@/constants'
 import { decodeTopic, decodeValue } from './decoder'
@@ -47,7 +47,6 @@ function mapRawEvent(raw: rpc.Api.RawEventResponse): SorobanEvent {
     contractId = raw.contractId
   } else if (raw.contractId) {
     try {
-      const { StrKey } = require('@stellar/stellar-sdk')
       const idObj = raw.contractId as { _id?: { data?: number[] } }
       if (idObj._id?.data) {
         contractId = StrKey.encodeContract(Buffer.from(idObj._id.data))
@@ -72,14 +71,10 @@ function mapRawEvent(raw: rpc.Api.RawEventResponse): SorobanEvent {
 
 async function getStartLedger(server: rpc.Server, ledgerFrom?: number | null): Promise<number> {
   if (ledgerFrom && ledgerFrom > 0) return ledgerFrom
-  try {
-    const latest = await server.getLatestLedger()
-    // Testnet RPC retains ~120960 ledgers (~7 days at 5s/ledger)
-    // Use latest minus 110000 to stay safely within retention window
-    return Math.max(1, latest.sequence - 110000)
-  } catch {
-    return 1
-  }
+  // Let this throw — falling back to ledger 1 causes timeouts since the RPC
+  // only retains ~7 days of history and scanning from 1 is unbounded.
+  const latest = await server.getLatestLedger()
+  return Math.max(1, latest.sequence - 110000)
 }
 
 export async function fetchContractEvents(
