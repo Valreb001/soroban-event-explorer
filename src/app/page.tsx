@@ -4,15 +4,32 @@ import { useRouter } from 'next/navigation'
 import { ContractSearch } from '@/components/search/ContractSearch'
 import { SearchHistory } from '@/components/search/SearchHistory'
 import { NetworkSelector } from '@/components/wallet/NetworkSelector'
+import { LiveEventFeed } from '@/components/home/LiveEventFeed'
 import { useSearchHistory } from '@/hooks/useSearchHistory'
 import { Network } from '@/types'
 import { DEFAULT_NETWORK, EXAMPLE_TESTNET_CONTRACT } from '@/constants'
 
 const FEATURES = [
-  { icon: '⚡', title: 'Real-time Indexing', desc: 'Fetch events directly from Soroban RPC as they happen.' },
-  { icon: '🔍', title: 'XDR Topic Decoding', desc: 'Raw XDR values decoded to human-readable format automatically.' },
-  { icon: '📊', title: 'Event Activity Charts', desc: 'Visualize event patterns over time with interactive charts.' },
-  { icon: '🌐', title: 'Multi-network Support', desc: 'Switch between Mainnet, Testnet, and Futurenet seamlessly.' },
+  {
+    icon: '⚡',
+    title: 'Live Mode',
+    desc: 'Stream new events as they land on-chain — no refresh needed. See your contract react in real time.',
+  },
+  {
+    icon: '🏷️',
+    title: 'Smart Event Labels',
+    desc: 'SEP-41 token events (transfer, mint, burn) and DeFi patterns auto-identified with human-readable labels.',
+  },
+  {
+    icon: '🔗',
+    title: 'Shareable Links',
+    desc: 'Filter by type, topic, or ledger range — the URL updates so you can share exactly what you see.',
+  },
+  {
+    icon: '🔍',
+    title: 'Full XDR Decoding',
+    desc: 'Every topic and value decoded from raw XDR — addresses, amounts, symbols, maps, and more.',
+  },
 ]
 
 export default function HomePage() {
@@ -26,20 +43,21 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-12">
+    <div className="flex flex-col items-center gap-14">
+      {/* Hero */}
       <div className="flex flex-col items-center text-center gap-6 pt-12 max-w-2xl w-full">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/40 border border-blue-800 text-blue-300 text-xs">
           <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-          Live on Stellar Testnet
+          Live on Stellar Testnet · Mainnet · Futurenet
         </div>
 
         <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight">
-          Explore Soroban Contract<br />
-          <span className="text-blue-400">Events in Real Time</span>
+          Soroban Contract Events,<br />
+          <span className="text-blue-400">Decoded and Live</span>
         </h1>
 
-        <p className="text-gray-400 text-lg">
-          Paste a Contract ID and instantly see all emitted events — decoded, filterable, and visualized.
+        <p className="text-gray-400 text-lg max-w-xl">
+          Paste a Contract ID and instantly see all emitted events — labeled, decoded, filterable, and streaming live.
         </p>
 
         <div className="w-full space-y-3">
@@ -56,6 +74,7 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Feature cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-4xl">
         {FEATURES.map(f => (
           <div key={f.title} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
@@ -66,6 +85,13 @@ export default function HomePage() {
         ))}
       </div>
 
+      {/* Live preview */}
+      <div className="flex flex-col items-center gap-3 w-full">
+        <p className="text-xs text-gray-500 uppercase tracking-widest">Live from testnet right now</p>
+        <LiveEventFeed />
+      </div>
+
+      {/* Search history */}
       {history.length > 0 && (
         <div className="w-full max-w-2xl">
           <SearchHistory history={history} onRemove={removeFromHistory} onClear={clearHistory} />

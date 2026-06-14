@@ -4,8 +4,14 @@ import Link from 'next/link'
 import { ConnectButton } from '@/components/wallet/ConnectButton'
 
 export const metadata: Metadata = {
-  title: 'Soroban Event Explorer',
-  description: 'Explore, search, and visualize events emitted by Soroban smart contracts on Stellar.',
+  title: 'Soroban Event Explorer — Real-time Stellar Contract Events',
+  description: 'Explore, decode, and monitor events emitted by Soroban smart contracts on Stellar. Live streaming, XDR decoding, smart event labeling, and shareable filtered views.',
+  keywords: ['Soroban', 'Stellar', 'smart contracts', 'blockchain events', 'XDR decoder', 'Stellar testnet'],
+  openGraph: {
+    title: 'Soroban Event Explorer',
+    description: 'Real-time Soroban contract event explorer with XDR decoding, live mode, and shareable links.',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
